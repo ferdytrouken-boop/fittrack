@@ -129,3 +129,4 @@ select date_trunc('month', date)::date mes, sum((data->>'km')::numeric) km
 from activities where type = 'running' and status = 'done'
 group by 1 order by 1 desc;
 ```
+  
