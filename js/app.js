@@ -37,10 +37,16 @@ function summary(a) {
       const p = paceSec(d.time_sec, d.km);
       return [d.km && `${fmtNum(d.km, 2)} km`, d.time_sec && fmtHMS(d.time_sec), p && fmtPace(p), d.kind].filter(Boolean).join(' · ') || 'Carrera';
     }
+    case 'cycling': {
+      const sp = d.time_sec && d.km ? d.km / (d.time_sec / 3600) : null;
+      return [d.km && `${fmtNum(d.km, 1)} km`, d.time_sec && fmtHMS(d.time_sec), sp && `${fmtNum(sp)} km/h`, d.kind].filter(Boolean).join(' · ') || 'Salida en bici';
+    }
+    case 'walking':
+      return [d.km && `${fmtNum(d.km, 2)} km`, d.time_sec && fmtHMS(d.time_sec), d.steps && `${fmtNum(d.steps, 0)} pasos`, d.kind].filter(Boolean).join(' · ') || 'Caminata';
+    case 'elliptical':
+      return [d.resistance != null && `Nivel ${d.resistance}`, d.km && `${fmtNum(d.km, 1)} km equiv.`].filter(Boolean).join(' · ') || 'Sesión en elíptica';
     case 'football':
       return [d.format, d.result, d.score, d.goals != null && `${d.goals} gol${d.goals == 1 ? '' : 'es'}`].filter(Boolean).join(' · ') || 'Partido';
-    case 'spinning':
-      return [d.ftp && `FTP ${d.ftp} W`, d.km && `${fmtNum(d.km)} km`, d.avg_power && `${d.avg_power} W med.`].filter(Boolean).join(' · ') || 'Sesión';
     default:
       return [d.name, d.km && `${fmtNum(d.km)} km`].filter(Boolean).join(' · ') || 'Actividad';
   }
@@ -204,7 +210,10 @@ function viewPlan() {
 
 function planData(a) {
   const d = a.data || {};
-  const keep = { gym: ['muscles', 'routine', 'exercises'], running: ['kind', 'km'], football: ['format'], spinning: ['ftp'], other: ['name'] }[a.type] || [];
+  const keep = {
+    gym: ['muscles', 'routine', 'exercises'], running: ['kind', 'km'], cycling: ['kind', 'km'],
+    walking: ['kind'], elliptical: ['resistance'], football: ['format'], other: ['name'],
+  }[a.type] || [];
   return Object.fromEntries(keep.filter(k => d[k] != null).map(k => [k, d[k]]));
 }
 async function copyWeek(n) {
@@ -239,7 +248,7 @@ function viewHistory() {
     <label class="toggle"><input type="checkbox" data-hall ${state.histAll ? 'checked' : ''}><span></span> Incluir planificadas y no realizadas</label>
     ${Object.keys(months).length ? Object.entries(months).map(([ym, acts]) => {
       const dn = acts.filter(a => a.status === 'done');
-      const km = sum(dn, a => (a.type === 'running' || a.type === 'spinning' || a.type === 'other') ? a.data?.km : 0);
+      const km = sum(dn, a => ['running', 'cycling', 'walking', 'other'].includes(a.type) ? a.data?.km : 0);
       return `<section class="month">
         <div class="month-head"><h3>${monthLabel(ym)}</h3>
           <span>${dn.length} ses. · ${fmtHours(sum(dn, a => a.duration_min))}${km ? ` · ${fmtNum(km, 0)} km` : ''}</span></div>
@@ -298,9 +307,21 @@ function viewStats() {
   const longest = runs.length ? runs.reduce((b, a) => a.data.km > b.data.km ? a : b) : null;
   const kmSeries = buckets.map(b => +sum(runs.filter(a => inBucket(a, b)), a => a.data.km).toFixed(1));
 
-  // Spinning
-  const spins = list.filter(a => a.type === 'spinning');
-  const ftps = spins.filter(a => a.data?.ftp).sort(byDate);
+  // Bicicleta
+  const rides = list.filter(a => a.type === 'cycling' && a.data?.km);
+  const rideKm = sum(rides, a => a.data.km), rideSec = sum(rides, a => a.data.time_sec);
+  const longestRide = rides.length ? rides.reduce((b, a) => a.data.km > b.data.km ? a : b) : null;
+  const kmSeriesBike = buckets.map(b => +sum(rides.filter(a => inBucket(a, b)), a => a.data.km).toFixed(1));
+
+  // Caminata
+  const walks = list.filter(a => a.type === 'walking');
+  const walkKm = sum(walks.filter(a => a.data?.km), a => a.data.km);
+  const walkSteps = sum(walks, a => a.data?.steps);
+
+  // Elíptica
+  const ellipses = list.filter(a => a.type === 'elliptical');
+  const ellipRes = ellipses.filter(a => a.data?.resistance);
+
   // Fútbol
   const games = list.filter(a => a.type === 'football');
   const res = r => games.filter(a => a.data?.result === r).length;
@@ -352,17 +373,37 @@ function viewStats() {
       ${simpleBars(kmSeries, buckets.map(b => b.label), { color: 'var(--c-run)', fmt: v => fmtNum(v, v >= 100 ? 0 : 1) })}` : empty('Sin carreras en este periodo.')}
     </section>
 
-    <section class="block sport t-spinning">
-      <h3>${icon('spinning')} Spinning</h3>
-      ${spins.length ? `<div class="stat-grid">
-        <div><small>Sesiones</small><b>${spins.length}</b></div>
-        <div><small>Distancia</small><b>${fmtNum(sum(spins, a => a.data?.km))} km</b></div>
-        <div><small>Tiempo</small><b>${fmtHours(sum(spins, a => a.duration_min))}</b></div>
-        <div><small>FTP actual</small><b>${ftps.length ? ftps[ftps.length - 1].data.ftp + ' W' : '—'}</b>
-          <em>${ftps.length > 1 ? `${ftps[ftps.length - 1].data.ftp - ftps[0].data.ftp >= 0 ? '+' : ''}${ftps[ftps.length - 1].data.ftp - ftps[0].data.ftp} W en el periodo` : ''}</em></div>
+    <section class="block sport t-cycling">
+      <h3>${icon('cycling')} Bicicleta</h3>
+      ${rides.length ? `
+      <div class="stat-grid">
+        <div><small>Distancia</small><b>${fmtNum(rideKm)} km</b></div>
+        <div><small>Salidas</small><b>${rides.length}</b></div>
+        <div><small>Velocidad media</small><b>${rideSec ? fmtNum(rideKm / (rideSec / 3600)) + ' km/h' : '—'}</b></div>
+        <div><small>Tiempo</small><b>${fmtHMS(rideSec)}</b></div>
+        <div><small>Más larga</small><b>${longestRide ? fmtNum(longestRide.data.km, 1) + ' km' : '—'}</b><em>${longestRide ? fmtDate(longestRide.date) : ''}</em></div>
       </div>
-      ${ftps.length > 1 ? `<p class="chart-title">FTP por sesión</p>${simpleBars(ftps.slice(-12).map(a => a.data.ftp), ftps.slice(-12).map(a => dayNum(a.date) + '/' + (fromISO(a.date).getMonth() + 1)), { color: 'var(--c-spin)' })}` : ''}`
-      : empty('Sin sesiones de spinning en este periodo.')}
+      <p class="chart-title">Km por ${monthly ? 'mes' : 'semana'}</p>
+      ${simpleBars(kmSeriesBike, buckets.map(b => b.label), { color: 'var(--c-bike)', fmt: v => fmtNum(v, v >= 100 ? 0 : 1) })}` : empty('Sin salidas en bici en este periodo.')}
+    </section>
+
+    <section class="block sport t-walking">
+      <h3>${icon('walking')} Caminata</h3>
+      ${walks.length ? `<div class="stat-grid">
+        <div><small>Caminatas</small><b>${walks.length}</b></div>
+        <div><small>Distancia</small><b>${walkKm ? fmtNum(walkKm) + ' km' : '—'}</b></div>
+        <div><small>Tiempo</small><b>${fmtHours(sum(walks, a => a.duration_min))}</b></div>
+        <div><small>Pasos</small><b>${walkSteps ? fmtNum(walkSteps, 0) : '—'}</b></div>
+      </div>` : empty('Sin caminatas en este periodo.')}
+    </section>
+
+    <section class="block sport t-elliptical">
+      <h3>${icon('elliptical')} Elíptica</h3>
+      ${ellipses.length ? `<div class="stat-grid">
+        <div><small>Sesiones</small><b>${ellipses.length}</b></div>
+        <div><small>Tiempo</small><b>${fmtHours(sum(ellipses, a => a.duration_min))}</b></div>
+        <div><small>Nivel medio</small><b>${ellipRes.length ? fmtNum(sum(ellipRes, a => a.data.resistance) / ellipRes.length, 0) : '—'}</b></div>
+      </div>` : empty('Sin sesiones de elíptica en este periodo.')}
     </section>
 
     <section class="block sport t-football">
@@ -469,7 +510,7 @@ function showAuth() {
   app.innerHTML = `
     <section class="auth">
       <div class="auth-hero">
-        <div class="auth-icons">${['gym', 'running', 'football', 'spinning'].map(t => `<span class="t-${t}">${icon(t)}</span>`).join('')}</div>
+        <div class="auth-icons">${['gym', 'running', 'cycling', 'walking'].map(t => `<span class="t-${t}">${icon(t)}</span>`).join('')}</div>
         <h1>FIT<b>TRACK</b></h1>
         <p>Registra, planifica y analiza tu actividad física.</p>
       </div>

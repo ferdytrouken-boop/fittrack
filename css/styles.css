@@ -14,8 +14,10 @@
 
   --c-gym: #C6FF1A;
   --c-run: #FF6A2B;
+  --c-bike: #3EA8FF;
+  --c-walk: #FFC94A;
+  --c-ellip: #FF6FA8;
   --c-foot: #22E3A0;
-  --c-spin: #3EA8FF;
   --c-other: #B38CFF;
 
   --r: 16px;
@@ -36,8 +38,10 @@ code { background: var(--card2); padding: 1px 5px; border-radius: 5px; font-size
 /* Colores por tipo */
 .t-gym { --tc: var(--c-gym); }
 .t-running { --tc: var(--c-run); }
+.t-cycling { --tc: var(--c-bike); }
+.t-walking { --tc: var(--c-walk); }
+.t-elliptical { --tc: var(--c-ellip); }
 .t-football { --tc: var(--c-foot); }
-.t-spinning { --tc: var(--c-spin); }
 .t-other { --tc: var(--c-other); }
 
 /* Iconos */

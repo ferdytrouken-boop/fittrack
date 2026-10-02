@@ -13,9 +13,15 @@ export const ICONS = {
   football: s(`<circle cx="12" cy="12" r="9.5"/>
           <path d="M12 7.3l3.3 2.4-1.3 3.9h-4l-1.3-3.9z" fill="currentColor"/>
           <path d="M12 7.3V2.6M15.3 9.7l4.3-1.6M14 13.6l2.7 3.8M10 13.6l-2.7 3.8M8.7 9.7L4.4 8.1"/>`),
-  spinning: s(`<circle cx="5.5" cy="17" r="3.7"/><circle cx="18.5" cy="17" r="3.7"/>
-          <path d="M5.5 17l4.5-7.5h6.5L18.5 17"/><path d="M10 9.5L12 17h1.5"/><path d="M8.5 6.5h3"/>
-          <path d="M16.5 9.5l-.8-3.5h2.3"/>`),
+  cycling: s(`<circle cx="5.5" cy="17" r="3.4"/><circle cx="18.5" cy="17" r="3.4"/>
+          <path d="M5.5 17L10 8h3l3 9"/><path d="M10 8h4.5"/><path d="M9 13h7.5"/>`),
+  walking: s(`<circle cx="13.2" cy="4" r="2" fill="currentColor" stroke="none"/>
+          <path d="M12.3 7.2l-.5 4.8"/><path d="M11.8 12l-2.8 7"/><path d="M11.8 12l3.6 1.8 1.6 4.7"/>
+          <path d="M9.2 10.2l2.6-.8 2.7 1.6"/>`),
+  elliptical: s(`<path d="M4.5 20L10 6"/><path d="M19.5 20L14 6"/><path d="M9.5 6h5"/>
+          <circle cx="12" cy="4.2" r="1.3" fill="currentColor" stroke="none"/>
+          <rect x="5.5" y="14.5" width="6.2" height="2.4" rx="1.1" transform="rotate(-25 8.6 15.7)"/>
+          <rect x="12.3" y="14.5" width="6.2" height="2.4" rx="1.1" transform="rotate(25 15.4 15.7)"/>`),
   other: s(`<circle cx="12" cy="13.5" r="8"/><path d="M12 13.5V9.5M9.5 2.5h5M12 2.5v3"/><path d="M18.5 6.5l1.5-1.5"/>`),
 
   // Interfaz

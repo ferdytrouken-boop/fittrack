@@ -1,13 +1,15 @@
 // Catálogos: tipos de actividad, grupos musculares y ejercicios.
 
 export const TYPES = {
-  gym:      { label: 'Gimnasio', short: 'Gym',      color: 'var(--c-gym)' },
-  running:  { label: 'Running',  short: 'Running',  color: 'var(--c-run)' },
-  football: { label: 'Fútbol',   short: 'Fútbol',   color: 'var(--c-foot)' },
-  spinning: { label: 'Spinning', short: 'Spinning', color: 'var(--c-spin)' },
-  other:    { label: 'Otra',     short: 'Otra',     color: 'var(--c-other)' },
+  gym:        { label: 'Gimnasio',  short: 'Gym',      color: 'var(--c-gym)' },
+  running:    { label: 'Running',   short: 'Running',  color: 'var(--c-run)' },
+  cycling:    { label: 'Bicicleta', short: 'Bici',     color: 'var(--c-bike)' },
+  walking:    { label: 'Caminata',  short: 'Caminata', color: 'var(--c-walk)' },
+  elliptical: { label: 'Elíptica',  short: 'Elíptica', color: 'var(--c-ellip)' },
+  football:   { label: 'Fútbol',    short: 'Fútbol',   color: 'var(--c-foot)' },
+  other:      { label: 'Otra',      short: 'Otra',     color: 'var(--c-other)' },
 };
-export const TYPE_ORDER = ['gym', 'running', 'football', 'spinning', 'other'];
+export const TYPE_ORDER = ['gym', 'running', 'cycling', 'walking', 'elliptical', 'football', 'other'];
 
 export const REGIONS = [
   { id: 'upper', label: 'Tren superior' },
@@ -34,6 +36,8 @@ export const MUSCLES = [
 export const MUSCLE_BY_ID = Object.fromEntries(MUSCLES.map(m => [m.id, m]));
 
 export const RUN_KINDS = ['Rodaje', 'Series', 'Tirada larga', 'Fartlek', 'Tempo', 'Recuperación', 'Competición'];
+export const CYCLE_KINDS = ['Carretera', 'Montaña (MTB)', 'Ciudad', 'Rodillo (indoor)', 'Gravel'];
+export const WALK_KINDS = ['Paseo', 'Caminata rápida', 'Senderismo', 'Recuperación'];
 export const FOOT_FORMATS = ['Fútbol 7', 'Fútbol 11', 'Fútbol sala', 'Fútbol 5'];
 export const RESULTS = ['Victoria', 'Empate', 'Derrota'];
 export const STATUS = {

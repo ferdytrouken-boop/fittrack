@@ -1,6 +1,6 @@
 # ⚡ FitTrack
 
-App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, running, fútbol, spinning y otras actividades.
+App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, running, bicicleta, caminata, elíptica, fútbol y otras actividades.
 
 - **Código**: GitHub (gratis) + **GitHub Pages** para publicarla.
 - **Base de datos**: **Supabase** (PostgreSQL gratuito), con login y sincronización entre dispositivos.
@@ -14,12 +14,14 @@ App móvil (PWA para Android) para **registrar y planificar tu actividad física
 |---|---|
 | 🏋️ **Gimnasio** | Catálogo de 14 grupos musculares (tren superior, core, tren inferior), rutina y ejercicios con series/reps/kg (sugerencias según los grupos elegidos). |
 | 🏃 **Running** | Km, tiempo (h:mm:ss) → **ritmo y velocidad automáticos**, tipo de entreno, FC media/máx, desnivel, cadencia, calorías, zapatillas. |
+| 🚴 **Bicicleta** | Km, tiempo → velocidad media automática, tipo de salida (carretera, MTB, rodillo…), desnivel, cadencia, potencia media (opcional), FC, kcal. |
+| 🚶 **Caminata** | Km y tiempo (opcionales) → ritmo automático, pasos, desnivel, FC, kcal. |
+| 🏋️‍♀️ **Elíptica** | Nivel/resistencia, distancia equivalente, cadencia, FC, kcal. |
 | ⚽ **Fútbol** | Modalidad (F7, F11, sala…), resultado, marcador, goles, asistencias, km. |
-| 🚴 **Spinning** | **FTP utilizado**, tiempo y km (obligatorios) + potencia media (→ % FTP), cadencia, FC, kcal. |
 | ⏱️ **Todas** | Tiempo dedicado (obligatorio al registrar), esfuerzo percibido 1–10, notas e icono propio. |
 | 📅 **Plan** | Vista semanal, planificar semanas futuras, copiar la semana a la siguiente o a las próximas 4, editar/mover/borrar, marcar como realizada o no realizada. |
 | 📜 **Historial** | Por meses, con filtros por deporte y totales. |
-| 📊 **Estadísticas** | Minutos por semana/mes, reparto por deporte, récords de running, evolución del FTP, balance de fútbol y **días desde que entrenaste cada grupo muscular**. |
+| 📊 **Estadísticas** | Minutos por semana/mes, reparto por deporte, récords de running y bici, totales de caminata y elíptica, balance de fútbol y **días desde que entrenaste cada grupo muscular**. |
 | 💾 **Backup** | Exportar / importar JSON desde Ajustes. |
 
 ---
@@ -50,6 +52,8 @@ No hay que compilar nada: son ficheros estáticos.
 ## Puesta en marcha (≈15 minutos)
 
 ### 1. Base de datos en Supabase
+
+> ¿Ya tenías Supabase configurado de antes (con Spinning)? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar Bicicleta, Caminata y Elíptica, sin borrar nada. Las sesiones que tuvieras como "Spinning" pasan a contar como "Bicicleta".
 
 1. Crea una cuenta gratuita en <https://supabase.com> y pulsa **New project** (elige región *West EU* y una contraseña).
 2. En el menú izquierdo: **SQL Editor → New query**, pega el contenido de `supabase/schema.sql` y pulsa **Run**.
@@ -97,7 +101,7 @@ No hay que compilar nada: son ficheros estáticos.
 
 - **➕ (botón verde)**: registrar o planificar una actividad. Si la fecha es futura, queda como *Planificada*.
 - **Plan**: navega por semanas con ‹ ›, pulsa **+** en un día para planificar. Toca una actividad para editarla, cambiarle la fecha o marcarla como *Realizada / No realizada*.
-- **Copiar semana**: prepara una semana tipo (p. ej. fútbol el jueves, spinning el sábado…) y cópiala a las siguientes 4 semanas.
+- **Copiar semana**: prepara una semana tipo (p. ej. fútbol el jueves, bici el sábado…) y cópiala a las siguientes 4 semanas.
 - **Hoy**: resumen semanal, racha, lo de hoy y **pendientes de registrar** (lo planificado que ya pasó). El botón ✓ abre el formulario para completar los datos.
 - **Icono de nube** (arriba): estado de sincronización. Si aparece un número, son cambios pendientes de subir.
 
@@ -109,7 +113,7 @@ Edita los ficheros, súbelos a GitHub y en 1–2 minutos se publica. Si cambias 
 
 - **Añadir ejercicios o grupos musculares**: `js/catalog.js` (`MUSCLES`).
 - **Colores**: variables al principio de `css/styles.css` (`--accent`, `--c-gym`, `--c-run`…).
-- **Nuevos tipos de entreno de running / modalidades de fútbol**: `RUN_KINDS`, `FOOT_FORMATS` en `js/catalog.js`.
+- **Nuevos tipos de entreno de running/bici/caminata o modalidades de fútbol**: `RUN_KINDS`, `CYCLE_KINDS`, `WALK_KINDS`, `FOOT_FORMATS` en `js/catalog.js`.
 
 ## Notas sobre los planes gratuitos
 
@@ -129,4 +133,3 @@ select date_trunc('month', date)::date mes, sum((data->>'km')::numeric) km
 from activities where type = 'running' and status = 'done'
 group by 1 order by 1 desc;
 ```
-  
