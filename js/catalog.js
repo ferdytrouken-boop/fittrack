@@ -6,10 +6,11 @@ export const TYPES = {
   cycling:    { label: 'Bicicleta', short: 'Bici',     color: 'var(--c-bike)' },
   walking:    { label: 'Caminata',  short: 'Caminata', color: 'var(--c-walk)' },
   elliptical: { label: 'Elíptica',  short: 'Elíptica', color: 'var(--c-ellip)' },
+  spinning:   { label: 'Spinning',  short: 'Spinning', color: 'var(--c-spin)' },
   football:   { label: 'Fútbol',    short: 'Fútbol',   color: 'var(--c-foot)' },
   other:      { label: 'Otra',      short: 'Otra',     color: 'var(--c-other)' },
 };
-export const TYPE_ORDER = ['gym', 'running', 'cycling', 'walking', 'elliptical', 'football', 'other'];
+export const TYPE_ORDER = ['gym', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other'];
 
 export const REGIONS = [
   { id: 'upper', label: 'Tren superior' },

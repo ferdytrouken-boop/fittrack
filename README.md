@@ -1,6 +1,6 @@
 # ⚡ FitTrack
 
-App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, running, bicicleta, caminata, elíptica, fútbol y otras actividades.
+App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, running, bicicleta, caminata, elíptica, spinning, fútbol y otras actividades.
 
 - **Código**: GitHub (gratis) + **GitHub Pages** para publicarla.
 - **Base de datos**: **Supabase** (PostgreSQL gratuito), con login y sincronización entre dispositivos.
@@ -17,11 +17,12 @@ App móvil (PWA para Android) para **registrar y planificar tu actividad física
 | 🚴 **Bicicleta** | Km, tiempo → velocidad media automática, tipo de salida (carretera, MTB, rodillo…), desnivel, cadencia, potencia media (opcional), FC, kcal. |
 | 🚶 **Caminata** | Km y tiempo (opcionales) → ritmo automático, pasos, desnivel, FC, kcal. |
 | 🏋️‍♀️ **Elíptica** | Nivel/resistencia, distancia equivalente, cadencia, FC, kcal. |
+| 🚴‍♂️ **Spinning** | **FTP utilizado**, tiempo y km (obligatorios) + potencia media (→ % FTP), cadencia, FC, kcal. |
 | ⚽ **Fútbol** | Modalidad (F7, F11, sala…), resultado, marcador, goles, asistencias, km. |
 | ⏱️ **Todas** | Tiempo dedicado (obligatorio al registrar), esfuerzo percibido 1–10, notas e icono propio. |
 | 📅 **Plan** | Vista semanal, planificar semanas futuras, copiar la semana a la siguiente o a las próximas 4, editar/mover/borrar, marcar como realizada o no realizada. |
 | 📜 **Historial** | Por meses, con filtros por deporte y totales. |
-| 📊 **Estadísticas** | Minutos por semana/mes, reparto por deporte, récords de running y bici, totales de caminata y elíptica, balance de fútbol y **días desde que entrenaste cada grupo muscular**. |
+| 📊 **Estadísticas** | Minutos por semana/mes, reparto por deporte, récords de running y bici, totales de caminata y elíptica, evolución del FTP, balance de fútbol y **días desde que entrenaste cada grupo muscular**. |
 | 💾 **Backup** | Exportar / importar JSON desde Ajustes. |
 
 ---
@@ -53,7 +54,7 @@ No hay que compilar nada: son ficheros estáticos.
 
 ### 1. Base de datos en Supabase
 
-> ¿Ya tenías Supabase configurado de antes (con Spinning)? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar Bicicleta, Caminata y Elíptica, sin borrar nada. Las sesiones que tuvieras como "Spinning" pasan a contar como "Bicicleta".
+> ¿Ya tenías Supabase configurado de antes? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar también Bicicleta, Caminata y Elíptica (Spinning se mantiene), sin borrar nada.
 
 1. Crea una cuenta gratuita en <https://supabase.com> y pulsa **New project** (elige región *West EU* y una contraseña).
 2. En el menú izquierdo: **SQL Editor → New query**, pega el contenido de `supabase/schema.sql` y pulsa **Run**.

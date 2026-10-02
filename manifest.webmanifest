@@ -1,7 +1,7 @@
 {
   "name": "FitTrack · Actividad física",
   "short_name": "FitTrack",
-  "description": "Registra y planifica gimnasio, running, bicicleta, caminata, elíptica y fútbol.",
+  "description": "Registra y planifica gimnasio, running, bicicleta, caminata, elíptica, spinning y fútbol.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

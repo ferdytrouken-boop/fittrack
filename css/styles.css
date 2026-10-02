@@ -17,6 +17,7 @@
   --c-bike: #3EA8FF;
   --c-walk: #FFC94A;
   --c-ellip: #FF6FA8;
+  --c-spin: #7FE3D1;
   --c-foot: #22E3A0;
   --c-other: #B38CFF;
 
@@ -41,6 +42,7 @@ code { background: var(--card2); padding: 1px 5px; border-radius: 5px; font-size
 .t-cycling { --tc: var(--c-bike); }
 .t-walking { --tc: var(--c-walk); }
 .t-elliptical { --tc: var(--c-ellip); }
+.t-spinning { --tc: var(--c-spin); }
 .t-football { --tc: var(--c-foot); }
 .t-other { --tc: var(--c-other); }
 

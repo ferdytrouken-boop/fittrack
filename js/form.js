@@ -144,6 +144,19 @@ function ellipticalFields(d) {
     </div>`;
 }
 
+function spinFields(d) {
+  return `
+    <div class="grid2">
+      ${field('FTP utilizado', numInp('d.ftp', d.ftp, 'inputmode="numeric" placeholder="W"') + '<span class="unit">W</span>')}
+      ${field('Distancia', numInp('d.km', d.km, 'placeholder="0,0"') + '<span class="unit">km</span>')}
+      ${field('Potencia media', numInp('d.avg_power', d.avg_power, 'placeholder="W"'))}
+      ${field('Cadencia media', numInp('d.cadence', d.cadence, 'placeholder="rpm"'))}
+      ${field('FC media', numInp('d.hr_avg', d.hr_avg, 'placeholder="ppm"'))}
+      ${field('Calorías', numInp('d.kcal', d.kcal, 'placeholder="kcal"'))}
+    </div>
+    <div class="live-stats" data-spin-live></div>`;
+}
+
 function otherFields(d) {
   return `
     ${field('Nombre de la actividad', inp('d.name', d.name, 'placeholder="Pádel, natación, yoga…"'))}
@@ -151,7 +164,7 @@ function otherFields(d) {
 }
 const FIELDS = {
   gym: gymFields, running: runFields, cycling: cycleFields, walking: walkFields,
-  elliptical: ellipticalFields, football: footFields, other: otherFields,
+  elliptical: ellipticalFields, spinning: spinFields, football: footFields, other: otherFields,
 };
 
 // ── Render ─────────────────────────────────────────────────
@@ -234,6 +247,7 @@ function renderForm(sheet, item, isNew) {
   // Cálculos en vivo
   const runLive = $('[data-run-live]');
   const speedOnly = runLive?.hasAttribute('data-speed-only');
+  const spinLive = $('[data-spin-live]');
   const live = () => {
     if (runLive) {
       const km = num(form['d.km'].value), sec = parseHMS(form['d.time'].value);
@@ -243,6 +257,14 @@ function renderForm(sheet, item, isNew) {
             ? `<span>${icon('bolt')} Velocidad <b>${fmtNum(km / (sec / 3600))} km/h</b></span>`
             : `<span>${icon('bolt')} Ritmo <b>${fmtPace(p)}</b></span><span>Velocidad <b>${fmtNum(km / (sec / 3600))} km/h</b></span>`)
         : '';
+    }
+    if (spinLive) {
+      const ftp = num(form['d.ftp'].value), ap = num(form['d.avg_power'].value);
+      const km = num(form['d.km'].value), mn = num(form.duration_min.value);
+      const parts = [];
+      if (ftp && ap) parts.push(`<span>${icon('bolt')} Intensidad <b>${Math.round(ap / ftp * 100)}% FTP</b></span>`);
+      if (km && mn) parts.push(`<span>Velocidad <b>${fmtNum(km / (mn / 60))} km/h</b></span>`);
+      spinLive.innerHTML = parts.join('');
     }
   };
   form.addEventListener('input', e => {
@@ -288,7 +310,7 @@ function collect(form, type) {
     data[k.slice(2)] = v;
   }
   // Números
-  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'avg_power', 'rpe', 'steps', 'resistance'].forEach(k => {
+  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'ftp', 'avg_power', 'rpe', 'steps', 'resistance'].forEach(k => {
     if (data[k] != null) { const n = num(data[k]); if (n == null || isNaN(n)) delete data[k]; else data[k] = n; }
   });
   if (form.querySelector('[name="d.rpe"]')?.hasAttribute('data-untouched') || fd.get('status') !== 'done') delete data.rpe;
@@ -315,6 +337,7 @@ function validate(r) {
   if (r.type === 'gym' && !d.muscles.length) return 'Selecciona al menos un grupo muscular.';
   if (r.type === 'running' && (!d.km || !d.time_sec)) return 'Indica los km recorridos y el tiempo (h:mm:ss).';
   if (r.type === 'cycling' && (!d.km || !d.time_sec)) return 'Indica los km recorridos y el tiempo (h:mm:ss).';
+  if (r.type === 'spinning' && (!d.ftp || !d.km)) return 'Indica el FTP utilizado y los km.';
   if (r.type === 'other' && !d.name) return 'Indica el nombre de la actividad.';
   return null;
 }

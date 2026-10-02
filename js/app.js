@@ -45,6 +45,8 @@ function summary(a) {
       return [d.km && `${fmtNum(d.km, 2)} km`, d.time_sec && fmtHMS(d.time_sec), d.steps && `${fmtNum(d.steps, 0)} pasos`, d.kind].filter(Boolean).join(' · ') || 'Caminata';
     case 'elliptical':
       return [d.resistance != null && `Nivel ${d.resistance}`, d.km && `${fmtNum(d.km, 1)} km equiv.`].filter(Boolean).join(' · ') || 'Sesión en elíptica';
+    case 'spinning':
+      return [d.ftp && `FTP ${d.ftp} W`, d.km && `${fmtNum(d.km)} km`, d.avg_power && `${d.avg_power} W med.`].filter(Boolean).join(' · ') || 'Sesión';
     case 'football':
       return [d.format, d.result, d.score, d.goals != null && `${d.goals} gol${d.goals == 1 ? '' : 'es'}`].filter(Boolean).join(' · ') || 'Partido';
     default:
@@ -212,7 +214,7 @@ function planData(a) {
   const d = a.data || {};
   const keep = {
     gym: ['muscles', 'routine', 'exercises'], running: ['kind', 'km'], cycling: ['kind', 'km'],
-    walking: ['kind'], elliptical: ['resistance'], football: ['format'], other: ['name'],
+    walking: ['kind'], elliptical: ['resistance'], spinning: ['ftp'], football: ['format'], other: ['name'],
   }[a.type] || [];
   return Object.fromEntries(keep.filter(k => d[k] != null).map(k => [k, d[k]]));
 }
@@ -248,7 +250,7 @@ function viewHistory() {
     <label class="toggle"><input type="checkbox" data-hall ${state.histAll ? 'checked' : ''}><span></span> Incluir planificadas y no realizadas</label>
     ${Object.keys(months).length ? Object.entries(months).map(([ym, acts]) => {
       const dn = acts.filter(a => a.status === 'done');
-      const km = sum(dn, a => ['running', 'cycling', 'walking', 'other'].includes(a.type) ? a.data?.km : 0);
+      const km = sum(dn, a => ['running', 'cycling', 'walking', 'spinning', 'other'].includes(a.type) ? a.data?.km : 0);
       return `<section class="month">
         <div class="month-head"><h3>${monthLabel(ym)}</h3>
           <span>${dn.length} ses. · ${fmtHours(sum(dn, a => a.duration_min))}${km ? ` · ${fmtNum(km, 0)} km` : ''}</span></div>
@@ -321,6 +323,10 @@ function viewStats() {
   // Elíptica
   const ellipses = list.filter(a => a.type === 'elliptical');
   const ellipRes = ellipses.filter(a => a.data?.resistance);
+
+  // Spinning
+  const spins = list.filter(a => a.type === 'spinning');
+  const ftps = spins.filter(a => a.data?.ftp).sort(byDate);
 
   // Fútbol
   const games = list.filter(a => a.type === 'football');
@@ -404,6 +410,19 @@ function viewStats() {
         <div><small>Tiempo</small><b>${fmtHours(sum(ellipses, a => a.duration_min))}</b></div>
         <div><small>Nivel medio</small><b>${ellipRes.length ? fmtNum(sum(ellipRes, a => a.data.resistance) / ellipRes.length, 0) : '—'}</b></div>
       </div>` : empty('Sin sesiones de elíptica en este periodo.')}
+    </section>
+
+    <section class="block sport t-spinning">
+      <h3>${icon('spinning')} Spinning</h3>
+      ${spins.length ? `<div class="stat-grid">
+        <div><small>Sesiones</small><b>${spins.length}</b></div>
+        <div><small>Distancia</small><b>${fmtNum(sum(spins, a => a.data?.km))} km</b></div>
+        <div><small>Tiempo</small><b>${fmtHours(sum(spins, a => a.duration_min))}</b></div>
+        <div><small>FTP actual</small><b>${ftps.length ? ftps[ftps.length - 1].data.ftp + ' W' : '—'}</b>
+          <em>${ftps.length > 1 ? `${ftps[ftps.length - 1].data.ftp - ftps[0].data.ftp >= 0 ? '+' : ''}${ftps[ftps.length - 1].data.ftp - ftps[0].data.ftp} W en el periodo` : ''}</em></div>
+      </div>
+      ${ftps.length > 1 ? `<p class="chart-title">FTP por sesión</p>${simpleBars(ftps.slice(-12).map(a => a.data.ftp), ftps.slice(-12).map(a => dayNum(a.date) + '/' + (fromISO(a.date).getMonth() + 1)), { color: 'var(--c-spin)' })}` : ''}`
+      : empty('Sin sesiones de spinning en este periodo.')}
     </section>
 
     <section class="block sport t-football">

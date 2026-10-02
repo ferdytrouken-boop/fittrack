@@ -22,6 +22,9 @@ export const ICONS = {
           <circle cx="12" cy="4.2" r="1.3" fill="currentColor" stroke="none"/>
           <rect x="5.5" y="14.5" width="6.2" height="2.4" rx="1.1" transform="rotate(-25 8.6 15.7)"/>
           <rect x="12.3" y="14.5" width="6.2" height="2.4" rx="1.1" transform="rotate(25 15.4 15.7)"/>`),
+  spinning: s(`<circle cx="5.5" cy="17" r="3.7"/><circle cx="18.5" cy="17" r="3.7"/>
+          <path d="M5.5 17l4.5-7.5h6.5L18.5 17"/><path d="M10 9.5L12 17h1.5"/><path d="M8.5 6.5h3"/>
+          <path d="M16.5 9.5l-.8-3.5h2.3"/>`),
   other: s(`<circle cx="12" cy="13.5" r="8"/><path d="M12 13.5V9.5M9.5 2.5h5M12 2.5v3"/><path d="M18.5 6.5l1.5-1.5"/>`),
 
   // Interfaz
