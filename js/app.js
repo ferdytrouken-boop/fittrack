@@ -34,6 +34,8 @@ function summary(a) {
       if (d.exercises?.length) parts.push(`${d.exercises.length} ejercicios`);
       return parts.join(' — ') || 'Sin grupos seleccionados';
     }
+    case 'abs':
+      return [d.sets && `${d.sets} series`, d.reps].filter(Boolean).join(' · ') || 'Tabla de abdominales';
     case 'running': {
       const p = paceSec(d.time_sec, d.km);
       return [d.km && `${fmtNum(d.km, 2)} km`, d.time_sec && fmtHMS(d.time_sec), p && fmtPace(p), d.kind].filter(Boolean).join(' · ') || 'Carrera';
@@ -222,7 +224,7 @@ function viewPlan() {
 function planData(a) {
   const d = a.data || {};
   const keep = {
-    gym: ['muscles', 'routine', 'exercises'], running: ['kind', 'km'], cycling: ['kind', 'km'],
+    gym: ['muscles', 'routine', 'exercises'], abs: ['sets', 'reps'], running: ['kind', 'km'], cycling: ['kind', 'km'],
     walking: ['kind'], elliptical: ['resistance'], spinning: ['ftp'], football: ['format'], other: ['name'],
   }[a.type] || [];
   return Object.fromEntries(keep.filter(k => d[k] != null).map(k => [k, d[k]]));

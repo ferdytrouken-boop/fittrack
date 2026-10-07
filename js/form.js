@@ -177,13 +177,20 @@ function spinFields(d) {
     <div class="live-stats" data-spin-live></div>`;
 }
 
+function absFields(d) {
+  return `
+    <div class="grid2">
+      ${field('Series', numInp('d.sets', d.sets, 'inputmode="numeric" placeholder="3"'))}
+      ${field('Repeticiones / tiempo por serie', inp('d.reps', d.reps, 'placeholder="20 o 30 seg"'))}
+    </div>`;
+}
 function otherFields(d) {
   return `
     ${field('Nombre de la actividad', inp('d.name', d.name, 'placeholder="Pádel, natación, yoga…"'))}
     ${field('Distancia', numInp('d.km', d.km, 'placeholder="km (opcional)"'))}`;
 }
 const FIELDS = {
-  gym: gymFields, running: runFields, cycling: cycleFields, walking: walkFields,
+  gym: gymFields, abs: absFields, running: runFields, cycling: cycleFields, walking: walkFields,
   elliptical: ellipticalFields, spinning: spinFields, football: footFields, other: otherFields,
 };
 
@@ -330,7 +337,7 @@ function collect(form, type) {
     data[k.slice(2)] = v;
   }
   // Números
-  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'ftp', 'avg_power', 'rpe', 'steps', 'resistance', 'time_h', 'time_m', 'time_s'].forEach(k => {
+  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'ftp', 'avg_power', 'rpe', 'steps', 'resistance', 'time_h', 'time_m', 'time_s', 'sets'].forEach(k => {
     if (data[k] != null) { const n = num(data[k]); if (n == null || isNaN(n)) delete data[k]; else data[k] = n; }
   });
   if (form.querySelector('[name="d.rpe"]')?.hasAttribute('data-untouched') || fd.get('status') !== 'done') delete data.rpe;

@@ -19,6 +19,7 @@
   --c-ellip: #FF6FA8;
   --c-spin: #7FE3D1;
   --c-weight: #94A3B8;
+  --c-abs: #FF4F6E;
   --c-foot: #22E3A0;
   --c-other: #B38CFF;
 
@@ -45,6 +46,7 @@ code { background: var(--card2); padding: 1px 5px; border-radius: 5px; font-size
 .t-elliptical { --tc: var(--c-ellip); }
 .t-spinning { --tc: var(--c-spin); }
 .t-weight { --tc: var(--c-weight); }
+.t-abs { --tc: var(--c-abs); }
 .wdelta.up { color: var(--danger); }
 .wdelta.down { color: var(--accent); }
 .t-football { --tc: var(--c-foot); }

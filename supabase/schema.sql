@@ -10,12 +10,13 @@
 create table if not exists public.activities (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  type          text not null check (type in ('gym', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other')),
+  type          text not null check (type in ('gym', 'abs', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other')),
   status        text not null default 'done' check (status in ('planned', 'done', 'skipped')),
   date          date not null,
   duration_min  integer check (duration_min is null or duration_min between 0 and 1440),
   -- Datos específicos de cada deporte:
   --   gym:        { muscles: ['pecho','triceps'], routine, exercises: [{name, sets, reps, kg}], rpe }
+  --   abs:        { sets, reps, rpe }
   --   running:    { km, time_sec, kind, hr_avg, hr_max, elev, cadence, kcal, shoes, rpe }
   --   cycling:    { km, time_sec, kind, elev, cadence, avg_power, hr_avg, kcal, bike, rpe }
   --   walking:    { km, time_sec, kind, steps, elev, hr_avg, kcal, rpe }
@@ -32,11 +33,11 @@ create table if not exists public.activities (
 create index if not exists activities_user_date_idx on public.activities (user_id, date);
 
 -- Si la tabla ya existía con una lista de tipos distinta, renovamos la
--- regla para que acepte también 'cycling', 'walking' y 'elliptical'
--- (y sigue aceptando 'spinning').
+-- regla para que acepte también 'cycling', 'walking', 'elliptical' y 'abs'
+-- (Tabla de abdominales, como actividad independiente) — y sigue aceptando 'spinning'.
 alter table public.activities drop constraint if exists activities_type_check;
 alter table public.activities add constraint activities_type_check
-  check (type in ('gym', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other'));
+  check (type in ('gym', 'abs', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other'));
 
 -- ── Seguridad a nivel de fila: cada usuario sólo ve y modifica lo suyo ──
 alter table public.activities enable row level security;

@@ -1,6 +1,6 @@
 # ⚡ FitTrack
 
-App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, running, bicicleta, caminata, elíptica, spinning, fútbol y otras actividades.
+App móvil (PWA para Android) para **registrar y planificar tu actividad física**: gimnasio por grupos musculares, tabla de abdominales, running, bicicleta, caminata, elíptica, spinning, fútbol y otras actividades.
 
 - **Código**: GitHub (gratis) + **GitHub Pages** para publicarla.
 - **Base de datos**: **Supabase** (PostgreSQL gratuito), con login y sincronización entre dispositivos.
@@ -13,6 +13,7 @@ App móvil (PWA para Android) para **registrar y planificar tu actividad física
 | | |
 |---|---|
 | 🏋️ **Gimnasio** | Catálogo de 14 grupos musculares (tren superior, core, tren inferior), rutina y ejercicios con series/reps/kg (sugerencias según los grupos elegidos). |
+| 🧘 **Tabla de abdominales** | Actividad independiente (no hace falta pasar por Gimnasio): series y repeticiones/tiempo por serie. |
 | 🏃 **Running** | Km, tiempo (h:mm:ss) → **ritmo y velocidad automáticos**, tipo de entreno, FC media/máx, desnivel, cadencia, calorías, zapatillas. |
 | 🚴 **Bicicleta** | Km, tiempo → velocidad media automática, tipo de salida (carretera, MTB, rodillo…), desnivel, cadencia, potencia media (opcional), FC, kcal. |
 | 🚶 **Caminata** | Km y tiempo (opcionales) → ritmo automático, pasos, desnivel, FC, kcal. |
@@ -55,7 +56,7 @@ No hay que compilar nada: son ficheros estáticos.
 
 ### 1. Base de datos en Supabase
 
-> ¿Ya tenías Supabase configurado de antes? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar también Bicicleta, Caminata y Elíptica (Spinning se mantiene) y **crea la nueva tabla `weights`** para el peso corporal, sin borrar nada. Sin este paso el peso se guarda en el móvil pero no se sincroniza.
+> ¿Ya tenías Supabase configurado de antes? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar también Bicicleta, Caminata, Elíptica y Tabla de abdominales (Spinning se mantiene) y **crea la nueva tabla `weights`** para el peso corporal, sin borrar nada. Sin este paso el peso se guarda en el móvil pero no se sincroniza.
 
 1. Crea una cuenta gratuita en <https://supabase.com> y pulsa **New project** (elige región *West EU* y una contraseña).
 2. En el menú izquierdo: **SQL Editor → New query**, pega el contenido de `supabase/schema.sql` y pulsa **Run**.

@@ -2,6 +2,7 @@
 
 export const TYPES = {
   gym:        { label: 'Gimnasio',  short: 'Gym',      color: 'var(--c-gym)' },
+  abs:        { label: 'Tabla de abdominales', short: 'Abdominales', color: 'var(--c-abs)' },
   running:    { label: 'Running',   short: 'Running',  color: 'var(--c-run)' },
   cycling:    { label: 'Bicicleta', short: 'Bici',     color: 'var(--c-bike)' },
   walking:    { label: 'Caminata',  short: 'Caminata', color: 'var(--c-walk)' },
@@ -10,7 +11,7 @@ export const TYPES = {
   football:   { label: 'Fútbol',    short: 'Fútbol',   color: 'var(--c-foot)' },
   other:      { label: 'Otra',      short: 'Otra',     color: 'var(--c-other)' },
 };
-export const TYPE_ORDER = ['gym', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other'];
+export const TYPE_ORDER = ['gym', 'abs', 'running', 'cycling', 'walking', 'elliptical', 'spinning', 'football', 'other'];
 
 export const REGIONS = [
   { id: 'upper', label: 'Tren superior' },
@@ -26,7 +27,7 @@ export const MUSCLES = [
   { id: 'triceps',   label: 'Tríceps',        region: 'upper', exercises: ['Press francés', 'Extensión en polea', 'Fondos en banco', 'Patada de tríceps', 'Press cerrado'] },
   { id: 'antebrazo', label: 'Antebrazo',      region: 'upper', exercises: ['Curl de muñeca', 'Curl invertido', 'Paseo del granjero'] },
   { id: 'trapecio',  label: 'Trapecio',       region: 'upper', exercises: ['Encogimientos', 'Remo al mentón'] },
-  { id: 'core',      label: 'Abdomen',        region: 'core',  exercises: ['Tabla de abdominales', 'Plancha', 'Crunch', 'Elevación de piernas', 'Rueda abdominal', 'Russian twist', 'Pallof press'] },
+  { id: 'core',      label: 'Abdomen',        region: 'core',  exercises: ['Plancha', 'Crunch', 'Elevación de piernas', 'Rueda abdominal', 'Russian twist', 'Pallof press'] },
   { id: 'lumbar',    label: 'Lumbar',         region: 'core',  exercises: ['Hiperextensiones', 'Superman', 'Buenos días'] },
   { id: 'cuadriceps',label: 'Cuádriceps',     region: 'lower', exercises: ['Sentadilla', 'Prensa', 'Extensión de cuádriceps', 'Zancadas', 'Sentadilla búlgara', 'Hack squat'] },
   { id: 'isquios',   label: 'Isquiotibiales', region: 'lower', exercises: ['Peso muerto rumano', 'Curl femoral tumbado', 'Curl femoral sentado', 'Nordic curl'] },
