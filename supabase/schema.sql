@@ -2,9 +2,9 @@
 --  FitTrack · Esquema de base de datos para Supabase (PostgreSQL)
 --  Ejecuta este script completo en: Supabase → SQL Editor → New query → Run
 --
---  ¿Ya habías ejecutado una versión anterior (sin bici/caminata/elíptica)?
---  Este script es seguro de volver a ejecutar: no borra datos, solo
---  actualiza la regla de qué valores admite la columna "type".
+--  ¿Ya habías ejecutado una versión anterior? Este script es seguro de
+--  volver a ejecutar: no borra datos, solo actualiza reglas y añade lo
+--  que falte (p. ej. la tabla "weights" para el seguimiento de peso).
 -- ═══════════════════════════════════════════════════════════════
 
 create table if not exists public.activities (
@@ -53,6 +53,35 @@ create policy "activities_insert_own" on public.activities
 create policy "activities_update_own" on public.activities
   for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "activities_delete_own" on public.activities
+  for delete to authenticated using (user_id = auth.uid());
+
+-- ── Peso corporal ──────────────────────────────────────────────
+create table if not exists public.weights (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  date          date not null,
+  weight_kg     numeric not null check (weight_kg > 0 and weight_kg < 400),
+  notes         text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists weights_user_date_idx on public.weights (user_id, date);
+
+alter table public.weights enable row level security;
+
+drop policy if exists "weights_select_own" on public.weights;
+drop policy if exists "weights_insert_own" on public.weights;
+drop policy if exists "weights_update_own" on public.weights;
+drop policy if exists "weights_delete_own" on public.weights;
+
+create policy "weights_select_own" on public.weights
+  for select to authenticated using (user_id = auth.uid());
+create policy "weights_insert_own" on public.weights
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "weights_update_own" on public.weights
+  for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "weights_delete_own" on public.weights
   for delete to authenticated using (user_id = auth.uid());
 
 -- ── Vista útil para consultas rápidas desde el SQL Editor ──

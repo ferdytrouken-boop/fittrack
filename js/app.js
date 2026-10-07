@@ -4,10 +4,10 @@ import { TYPES, TYPE_ORDER, MUSCLES, MUSCLE_BY_ID, STATUS } from './catalog.js';
 import { icon } from './icons.js';
 import { openSheet, toast, ask } from './ui.js';
 import { newActivity, editActivity } from './form.js';
-import { stackedBars, simpleBars, ring } from './charts.js';
+import { stackedBars, simpleBars, ring, lineChart } from './charts.js';
 import {
   today, addDays, weekStart, weekDays, isoWeek, diffDays, dow, dayNum, monShort, monthLabel,
-  fmtDate, fmtDateLong, relDay, fmtMin, fmtHours, fmtHMS, paceSec, fmtPace, fmtNum, esc, fromISO, toISO,
+  fmtDate, fmtDateLong, relDay, fmtMin, fmtHours, fmtHM, fmtHMS, paceSec, fmtPace, fmtNum, num, esc, fromISO, toISO, nearestFriday,
 } from './utils.js';
 
 const app = document.getElementById('app');
@@ -16,6 +16,7 @@ const state = {
   planWeek: weekStart(today()),
   histType: 'all',
   histAll: false,
+  histGroup: 'month',
   period: '4w',
 };
 
@@ -111,6 +112,8 @@ function viewHome() {
   const wTotal = week.filter(a => a.status !== 'skipped').length;
   const wMin = sum(wDone, a => a.duration_min);
   const wKm = sum(wDone.filter(a => a.type === 'running'), a => a.data?.km);
+  const lastFriday = nearestFriday(t);
+  const weighedFriday = db.allWeights().some(w => w.date === lastFriday);
   const overdue = all.filter(a => a.status === 'planned' && a.date < t).sort(byDate);
   const upcoming = all.filter(a => a.status === 'planned' && a.date > t && a.date <= addDays(t, 14)).sort(byDate).slice(0, 5);
   const name = db.prefs.get('name', '');
@@ -142,6 +145,12 @@ function viewHome() {
       </div>
       <div class="week-dots">${dots}</div>
     </section>
+
+    ${!weighedFriday ? `<section class="block warn-block t-weight">
+      <h3>${icon('scale')} Pésate este viernes</h3>
+      <p class="muted">Aún no tienes el peso de esta semana (${fmtDate(lastFriday)}). Apúntalo para llevar el seguimiento.</p>
+      <button class="btn ghost sm" data-action="weight" data-weight-date="${lastFriday}">${icon('scale')} Registrar peso</button>
+    </section>` : ''}
 
     ${overdue.length ? `<section class="block warn-block">
       <h3>Pendientes de registrar <span class="count">${overdue.length}</span></h3>
@@ -239,20 +248,31 @@ function viewHistory() {
   let list = db.all().filter(a => state.histAll ? a.date <= today() : a.status === 'done');
   if (state.histType !== 'all') list = list.filter(a => a.type === state.histType);
   list.sort((a, b) => byDate(b, a));
-  const months = {};
-  list.forEach(a => (months[a.date.slice(0, 7)] ||= []).push(a));
+
+  const byWeek = state.histGroup === 'week';
+  const groups = {};
+  list.forEach(a => (groups[byWeek ? weekStart(a.date) : a.date.slice(0, 7)] ||= []).push(a));
+  const groupLabel = key => {
+    if (!byWeek) return monthLabel(key);
+    const we = addDays(key, 6);
+    return `Semana ${isoWeek(key)} · ${dayNum(key)} ${monShort(key)} – ${dayNum(we)} ${monShort(we)}`;
+  };
 
   const chips = ['all', ...TYPE_ORDER].map(t => `<button class="fchip ${state.histType === t ? 'on' : ''} ${t !== 'all' ? 't-' + t : ''}" data-htype="${t}">
     ${t === 'all' ? 'Todas' : icon(t) + TYPES[t].short}</button>`).join('');
 
   return `
     <div class="filters">${chips}</div>
+    <div class="seg seg-plain seg-2">
+      <label><input type="radio" name="histgroup" value="month" ${!byWeek ? 'checked' : ''}><span>Por mes</span></label>
+      <label><input type="radio" name="histgroup" value="week" ${byWeek ? 'checked' : ''}><span>Por semana</span></label>
+    </div>
     <label class="toggle"><input type="checkbox" data-hall ${state.histAll ? 'checked' : ''}><span></span> Incluir planificadas y no realizadas</label>
-    ${Object.keys(months).length ? Object.entries(months).map(([ym, acts]) => {
+    ${Object.keys(groups).length ? Object.entries(groups).map(([key, acts]) => {
       const dn = acts.filter(a => a.status === 'done');
       const km = sum(dn, a => ['running', 'cycling', 'walking', 'spinning', 'other'].includes(a.type) ? a.data?.km : 0);
       return `<section class="month">
-        <div class="month-head"><h3>${monthLabel(ym)}</h3>
+        <div class="month-head"><h3>${groupLabel(key)}</h3>
           <span>${dn.length} ses. · ${fmtHours(sum(dn, a => a.duration_min))}${km ? ` · ${fmtNum(km, 0)} km` : ''}</span></div>
         <div class="list">${acts.map(a => card(a, { showDate: true, action: false })).join('')}</div>
       </section>`;
@@ -350,9 +370,25 @@ function viewStats() {
       <div class="kpi-card"><small>Media / sesión</small><b>${list.length ? Math.round(totalMin / list.length) + "'" : '—'}</b></div>
     </section>
 
+    ${(() => {
+      const wlist = db.allWeights().filter(w => w.date >= from && w.date <= t).sort((a, b) => a.date.localeCompare(b.date));
+      if (!wlist.length) return '';
+      const cur = wlist[wlist.length - 1], delta = wlist.length > 1 ? cur.weight_kg - wlist[0].weight_kg : null;
+      return `<section class="block sport t-weight">
+        <h3>${icon('scale')} Peso corporal</h3>
+        <div class="stat-grid">
+          <div><small>Peso actual</small><b>${fmtNum(cur.weight_kg, 1)} kg</b><em>${fmtDate(cur.date)}</em></div>
+          <div><small>Registros</small><b>${wlist.length}</b></div>
+          <div><small>Cambio en el periodo</small><b class="wdelta ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}">${delta != null ? `${delta > 0 ? '+' : ''}${fmtNum(delta, 1)} kg` : '—'}</b></div>
+        </div>
+        ${lineChart(wlist.map(w => ({ label: `${dayNum(w.date)}/${monShort(w.date)}`, value: w.weight_kg })), { fmt: v => fmtNum(v, 1) + ' kg' })}
+        <button class="btn ghost sm" data-action="weight">${icon('scale')} Ver y añadir registros</button>
+      </section>`;
+    })()}
+
     <section class="block">
-      <h3>Minutos por ${monthly ? 'mes' : 'semana'}</h3>
-      ${list.length ? stackedBars(buckets, { fmt: v => Math.round(v) }) : empty('Sin datos en este periodo.')}
+      <h3>Tiempo por ${monthly ? 'mes' : 'semana'}</h3>
+      ${list.length ? stackedBars(buckets, { fmt: fmtHM }) : empty('Sin datos en este periodo.')}
       <div class="legend">${TYPE_ORDER.map(tp => `<span class="t-${tp}"><i></i>${TYPES[tp].short}</span>`).join('')}</div>
     </section>
 
@@ -467,8 +503,14 @@ function openSettings() {
                <p class="muted">Última sincronización: ${last ? new Date(last).toLocaleString('es-ES') : 'nunca'} · Pendientes: ${db.pendingCount()}</p>
                <div class="btn-row"><button class="btn ghost" data-s="sync">${icon('cloud')} Sincronizar</button>
                <button class="btn ghost" data-s="logout">Cerrar sesión</button></div>
-               ${db.localItems().length ? `<button class="btn ghost" data-s="migrate">Subir ${db.localItems().length} actividades del modo local</button>` : ''}`
+               ${db.localItems().length || db.localWeights().length ? `<button class="btn ghost" data-s="migrate">Subir ${db.localItems().length} actividades${db.localWeights().length ? ` y ${db.localWeights().length} registros de peso` : ''} del modo local</button>` : ''}`
         : `<p class="muted">Estás usando el modo local.</p><button class="btn primary" data-s="login">Iniciar sesión / crear cuenta</button>`}
+      </div>
+
+      <div class="set-card">
+        <h4>${icon('scale')} Peso corporal</h4>
+        <p class="muted">${db.allWeights().length ? `${db.allWeights().length} registros guardados.` : 'Aún no has registrado tu peso.'}</p>
+        <button class="btn ghost" data-s="weight">${icon('scale')} Llevar seguimiento del peso</button>
       </div>
 
       <div class="set-card">
@@ -495,10 +537,12 @@ function openSettings() {
     if (a === 'logout') { if (await ask('¿Cerrar sesión en este dispositivo?')) { await db.signOut(); db.prefs.set('skipAuth', false); sheet.close(); boot(); } }
     if (a === 'login') { db.prefs.set('skipAuth', false); sheet.close(); showAuth(); }
     if (a === 'migrate') {
-      const list = db.localItems();
-      await db.saveMany(list.map(x => ({ ...x, id: undefined })));
-      db.clearLocalItems(); toast(`${list.length} actividades subidas`); sheet.close();
+      const list = db.localItems(), wlist = db.localWeights();
+      if (list.length) { await db.saveMany(list.map(x => ({ ...x, id: undefined }))); db.clearLocalItems(); }
+      if (wlist.length) { for (const w of wlist) await db.saveWeight({ ...w, id: undefined }); db.clearLocalWeights(); }
+      toast(`${list.length} actividades${wlist.length ? ` y ${wlist.length} pesos` : ''} subidos`); sheet.close();
     }
+    if (a === 'weight') { sheet.close(); setTimeout(() => openWeightLog(), 300); }
     if (a === 'export') exportJSON();
     if (a === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; }
   });
@@ -507,21 +551,87 @@ function openSettings() {
     try {
       const data = JSON.parse(await f.text());
       const list = Array.isArray(data) ? data : data.activities;
+      const wlist = Array.isArray(data) ? [] : (data.weights || []);
       if (!Array.isArray(list)) throw new Error();
       const ids = new Set(db.all().map(a => a.id));
       const fresh = list.filter(a => a.type && a.date && !ids.has(a.id));
-      if (await ask(`Se importarán ${fresh.length} actividades nuevas. ¿Continuar?`)) {
-        db.replaceAll([...db.all(), ...fresh]); toast('Importación completada'); sheet.close();
+      const wids = new Set(db.allWeights().map(w => w.id));
+      const wdates = new Set(db.allWeights().map(w => w.date));
+      const freshW = wlist.filter(w => w.date && w.weight_kg && !wids.has(w.id) && !wdates.has(w.date));
+      if (await ask(`Se importarán ${fresh.length} actividades${freshW.length ? ` y ${freshW.length} registros de peso` : ''} nuevos. ¿Continuar?`)) {
+        db.replaceAll([...db.all(), ...fresh]);
+        for (const w of freshW) await db.saveWeight(w);
+        toast('Importación completada'); sheet.close();
       }
     } catch { toast('El fichero no es válido', 'info'); }
   });
 }
 
 function exportJSON() {
-  const blob = new Blob([JSON.stringify({ app: 'FitTrack', exported: new Date().toISOString(), activities: db.all() }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FitTrack', exported: new Date().toISOString(), activities: db.all(), weights: db.allWeights() }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `fittrack-${today()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ── Peso corporal ────────────────────────────────────────────
+function openWeightLog(prefillDate) {
+  const sheet = openSheet('');
+  const draw = editing => {
+    const list = db.allWeights().slice().sort((a, b) => a.date.localeCompare(b.date)); // asc
+    const rows = list.slice().reverse(); // desc para mostrar
+    const d = editing || { id: '', date: prefillDate || nearestFriday(), weight_kg: '', notes: '' };
+    sheet.el.querySelector('.sheet-body').innerHTML = `
+      <h2 class="sheet-title">${icon('scale')} Peso corporal</h2>
+      <form class="weight-form">
+        <input type="hidden" name="id" value="${esc(d.id || '')}">
+        <label class="field"><span class="lbl">Fecha</span><input type="date" name="date" value="${esc(d.date)}" max="${today()}" required></label>
+        <label class="field"><span class="lbl">Peso <em>kg</em></span><input name="weight_kg" inputmode="decimal" autocomplete="off" value="${esc(d.weight_kg ?? '')}" placeholder="0,0" required></label>
+        <label class="field"><span class="lbl">Notas <em>opcional</em></span><input name="notes" value="${esc(d.notes ?? '')}"></label>
+        <div class="btn-row">
+          <button class="btn primary" type="submit">${d.id ? 'Guardar cambios' : 'Añadir registro'}</button>
+          ${d.id ? `<button class="btn ghost danger-txt" type="button" data-del-weight="${d.id}">${icon('trash')} Borrar</button>` : ''}
+        </div>
+      </form>
+      ${list.length ? `<section class="block">
+        <h3>Evolución</h3>
+        ${lineChart(list.map(w => ({ label: `${dayNum(w.date)}/${monShort(w.date)}`, value: w.weight_kg })), { fmt: v => fmtNum(v, 1) + ' kg' })}
+        <div class="list">${rows.map(w => {
+          const i = list.findIndex(x => x.id === w.id);
+          const prev = i > 0 ? list[i - 1] : null;
+          const delta = prev ? w.weight_kg - prev.weight_kg : null;
+          return `<button type="button" class="act-card t-weight" data-edit-weight="${w.id}">
+            <span class="act-ic">${icon('scale')}</span>
+            <span class="act-body"><b>${fmtNum(w.weight_kg, 1)} kg</b><small>${fmtDate(w.date)}${w.notes ? ' · ' + esc(w.notes) : ''}</small></span>
+            <span class="act-meta">${delta != null ? `<b class="wdelta ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}">${delta > 0 ? '+' : ''}${fmtNum(delta, 1)} kg</b>` : ''}</span>
+          </button>`;
+        }).join('')}</div>
+      </section>` : empty('Aún no has registrado tu peso. Añade el primero arriba, por ejemplo cada viernes.')}`;
+
+    sheet.el.querySelector('.weight-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = e.target;
+      const date = f.date.value, weight_kg = num(f.weight_kg.value);
+      if (!date || !weight_kg) return;
+      const id = f.id.value || undefined;
+      // Un registro por fecha: si ya existe otro con esa fecha, lo sobrescribimos.
+      const dup = db.allWeights().find(w => w.date === date && w.id !== id);
+      const wasNew = !id;
+      await db.saveWeight({ id: id || dup?.id, date, weight_kg, notes: f.notes.value.trim() || null });
+      toast(wasNew ? 'Peso registrado' : 'Peso actualizado');
+      draw();
+    });
+    sheet.el.querySelectorAll('[data-edit-weight]').forEach(b => b.addEventListener('click', () => {
+      const w = db.getWeight(b.dataset.editWeight); if (w) draw(w);
+    }));
+    const delBtn = sheet.el.querySelector('[data-del-weight]');
+    if (delBtn) delBtn.addEventListener('click', async () => {
+      if (await ask('¿Borrar este registro de peso?', { ok: 'Borrar', danger: true })) {
+        await db.removeWeight(delBtn.dataset.delWeight); toast('Registro borrado'); draw();
+      }
+    });
+  };
+  draw();
 }
 
 // ── Pantalla de acceso ──────────────────────────────────────
@@ -556,9 +666,12 @@ function showAuth() {
         if (!r.session) { err.textContent = 'Cuenta creada. Revisa tu email para confirmarla y después pulsa Entrar.'; err.hidden = false; err.classList.add('ok'); return; }
       } else await db.signIn(email, pw);
       start();
-      const local = db.localItems();
-      if (local.length && await ask(`Tienes ${local.length} actividades guardadas en modo local. ¿Subirlas a tu cuenta?`, { ok: 'Subir' })) {
-        await db.saveMany(local.map(x => ({ ...x, id: undefined }))); db.clearLocalItems(); toast('Actividades subidas');
+      const local = db.localItems(), localW = db.localWeights();
+      if ((local.length || localW.length) && await ask(
+        `Tienes ${local.length} actividades${localW.length ? ` y ${localW.length} registros de peso` : ''} guardados en modo local. ¿Subirlos a tu cuenta?`, { ok: 'Subir' })) {
+        if (local.length) { await db.saveMany(local.map(x => ({ ...x, id: undefined }))); db.clearLocalItems(); }
+        if (localW.length) { for (const w of localW) await db.saveWeight({ ...w, id: undefined }); db.clearLocalWeights(); }
+        toast('Datos subidos');
       }
     } catch (ex) {
       err.textContent = /Invalid login/i.test(ex.message) ? 'Email o contraseña incorrectos.' : ex.message; err.hidden = false; err.classList.remove('ok');
@@ -578,6 +691,7 @@ app.addEventListener('click', async e => {
   if (ds.nav) { state.view = ds.nav; db.prefs.set('view', ds.nav); render(); window.scrollTo(0, 0); }
   else if (ds.action === 'add') newActivity({ date: state.view === 'plan' && state.planWeek > today() ? state.planWeek : today() });
   else if (ds.action === 'settings') openSettings();
+  else if (ds.action === 'weight') openWeightLog(ds.weightDate || undefined);
   else if (ds.action === 'sync') { await db.sync(); toast(db.pendingCount() ? 'Sin conexión: se sincronizará más tarde' : 'Sincronizado', db.pendingCount() ? 'info' : 'ok'); }
   else if (ds.open) { const a = db.get(ds.open); if (a) editActivity(a); }
   else if (ds.week) { state.planWeek = ds.week === '0' ? weekStart(today()) : addDays(state.planWeek, 7 * Number(ds.week)); render(); }
@@ -594,7 +708,10 @@ app.addEventListener('click', async e => {
   else if (ds.htype) { state.histType = ds.htype; render(); }
   else if (ds.period) { state.period = ds.period; render(); }
 });
-app.addEventListener('change', e => { if (e.target.matches('[data-hall]')) { state.histAll = e.target.checked; render(); } });
+app.addEventListener('change', e => {
+  if (e.target.matches('[data-hall]')) { state.histAll = e.target.checked; render(); }
+  if (e.target.name === 'histgroup') { state.histGroup = e.target.value; render(); }
+});
 
 // Instalación PWA
 let deferredInstall = null;
@@ -605,7 +722,11 @@ window.addEventListener('offline', render);
 // ── Arranque ────────────────────────────────────────────────
 let started = false;
 function start() {
-  if (!started) { db.onChange(() => { if (!document.querySelector('.auth')) render(); }); started = true; }
+  if (!started) {
+    db.onChange(() => { if (!document.querySelector('.auth')) render(); });
+    db.onWeightChange(() => { if (!document.querySelector('.auth')) render(); });
+    started = true;
+  }
   render();
   if (new URLSearchParams(location.search).has('add')) { history.replaceState(null, '', './'); newActivity(); }
 }

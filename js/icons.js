@@ -26,6 +26,8 @@ export const ICONS = {
           <path d="M5.5 17l4.5-7.5h6.5L18.5 17"/><path d="M10 9.5L12 17h1.5"/><path d="M8.5 6.5h3"/>
           <path d="M16.5 9.5l-.8-3.5h2.3"/>`),
   other: s(`<circle cx="12" cy="13.5" r="8"/><path d="M12 13.5V9.5M9.5 2.5h5M12 2.5v3"/><path d="M18.5 6.5l1.5-1.5"/>`),
+  scale: s(`<rect x="3" y="8" width="18" height="13" rx="3.2"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/>
+          <circle cx="12" cy="14.3" r="3"/><path d="M12 14.3l1.7-1.9"/>`),
 
   // Interfaz
   home: s(`<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>`),

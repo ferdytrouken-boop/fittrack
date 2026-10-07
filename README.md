@@ -21,9 +21,10 @@ App móvil (PWA para Android) para **registrar y planificar tu actividad física
 | ⚽ **Fútbol** | Modalidad (F7, F11, sala…), resultado, marcador, goles, asistencias, km. |
 | ⏱️ **Todas** | Tiempo dedicado (obligatorio al registrar), esfuerzo percibido 1–10, notas e icono propio. |
 | 📅 **Plan** | Vista semanal, planificar semanas futuras, copiar la semana a la siguiente o a las próximas 4, editar/mover/borrar, marcar como realizada o no realizada. |
-| 📜 **Historial** | Por meses, con filtros por deporte y totales. |
-| 📊 **Estadísticas** | Minutos por semana/mes, reparto por deporte, récords de running y bici, totales de caminata y elíptica, evolución del FTP, balance de fútbol y **días desde que entrenaste cada grupo muscular**. |
-| 💾 **Backup** | Exportar / importar JSON desde Ajustes. |
+| 📜 **Historial** | Agrupado **por mes o por semana** (selector arriba), con filtros por deporte y totales. |
+| 📊 **Estadísticas** | Minutos por semana/mes (eje en **h:mm**), reparto por deporte, récords de running y bici, totales de caminata y elíptica, evolución del FTP, balance de fútbol, **días desde que entrenaste cada grupo muscular** y evolución del peso corporal. |
+| ⚖️ **Peso corporal** | Registra tu peso (pensado para hacerlo cada viernes), con recordatorio en Hoy si aún no lo has apuntado esa semana. Gráfica de evolución, historial editable y resumen en Estadísticas. Accesible desde Ajustes. |
+| 💾 **Backup** | Exportar / importar JSON desde Ajustes (incluye actividades y peso). |
 
 ---
 
@@ -54,7 +55,7 @@ No hay que compilar nada: son ficheros estáticos.
 
 ### 1. Base de datos en Supabase
 
-> ¿Ya tenías Supabase configurado de antes? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar también Bicicleta, Caminata y Elíptica (Spinning se mantiene), sin borrar nada.
+> ¿Ya tenías Supabase configurado de antes? Solo tienes que volver a pegar `supabase/schema.sql` en el SQL Editor y pulsar **Run** otra vez: actualiza la base de datos para aceptar también Bicicleta, Caminata y Elíptica (Spinning se mantiene) y **crea la nueva tabla `weights`** para el peso corporal, sin borrar nada. Sin este paso el peso se guarda en el móvil pero no se sincroniza.
 
 1. Crea una cuenta gratuita en <https://supabase.com> y pulsa **New project** (elige región *West EU* y una contraseña).
 2. En el menú izquierdo: **SQL Editor → New query**, pega el contenido de `supabase/schema.sql` y pulsa **Run**.
@@ -104,6 +105,9 @@ No hay que compilar nada: son ficheros estáticos.
 - **Plan**: navega por semanas con ‹ ›, pulsa **+** en un día para planificar. Toca una actividad para editarla, cambiarle la fecha o marcarla como *Realizada / No realizada*.
 - **Copiar semana**: prepara una semana tipo (p. ej. fútbol el jueves, bici el sábado…) y cópiala a las siguientes 4 semanas.
 - **Hoy**: resumen semanal, racha, lo de hoy y **pendientes de registrar** (lo planificado que ya pasó). El botón ✓ abre el formulario para completar los datos.
+- **Tiempo en carreras/bici/caminata**: tres cajas **h / min / seg** (el teclado numérico del móvil no tiene «:»).
+- **Historial**: cambia entre *Por mes* y *Por semana* para ver lo realizado cada semana.
+- **Peso**: **Ajustes → Peso corporal** (o el aviso de la pestaña Hoy). Un registro por fecha; la fecha por defecto es el último viernes.
 - **Icono de nube** (arriba): estado de sincronización. Si aparece un número, son cambios pendientes de subir.
 
 ## Actualizar la app
@@ -128,6 +132,9 @@ En Supabase → SQL Editor:
 ```sql
 -- Resumen semanal por deporte
 select * from activities_summary limit 40;
+
+-- Evolución del peso
+select date, weight_kg from weights order by date desc limit 30;
 
 -- Km corridos por mes
 select date_trunc('month', date)::date mes, sum((data->>'km')::numeric) km

@@ -5,13 +5,17 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const TABLE = 'activities';
 const COLS = ['id', 'type', 'status', 'date', 'duration_min', 'data', 'notes', 'created_at', 'updated_at'];
+const WTABLE = 'weights';
+const WCOLS = ['id', 'date', 'weight_kg', 'notes', 'created_at', 'updated_at'];
 
 export const remoteConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 let sb = null;          // cliente supabase
 let user = null;        // usuario autenticado
 let items = [];         // actividades en memoria
+let weights = [];       // registros de peso en memoria
 let listeners = new Set();
+let wlisteners = new Set();
 let syncing = false;
 
 const ls = {
@@ -22,14 +26,21 @@ const ls = {
 const scope = () => (user ? user.id : 'local');
 const kItems = () => `ft_items_${scope()}`;
 const kOutbox = () => `ft_outbox_${scope()}`;
+const kWeights = () => `ft_weights_${scope()}`;
+const kWeightOutbox = () => `ft_weights_outbox_${scope()}`;
 
-function load() { items = ls.get(kItems(), []); }
+function load() { items = ls.get(kItems(), []); weights = ls.get(kWeights(), []); }
 function persist() { ls.set(kItems(), items); emit(); }
 function emit() { listeners.forEach(fn => fn(items)); }
+function persistWeights() { ls.set(kWeights(), weights); emitWeights(); }
+function emitWeights() { wlisteners.forEach(fn => fn(weights)); }
 
 export const onChange = fn => (listeners.add(fn), () => listeners.delete(fn));
 export const all = () => items;
 export const get = id => items.find(i => i.id === id);
+export const onWeightChange = fn => (wlisteners.add(fn), () => wlisteners.delete(fn));
+export const allWeights = () => weights;
+export const getWeight = id => weights.find(w => w.id === id);
 export const currentUser = () => user;
 export const isRemote = () => Boolean(sb && user);
 
@@ -52,7 +63,7 @@ export async function init() {
       sb.auth.onAuthStateChange((_e, session) => {
         const prev = user?.id;
         user = session?.user || null;
-        if (prev !== user?.id) { load(); emit(); if (user) sync(); }
+        if (prev !== user?.id) { load(); emit(); emitWeights(); if (user) sync(); }
       });
     } catch (e) {
       // Sin conexión y sin la librería en caché: seguimos con lo que haya en local
@@ -83,7 +94,7 @@ export async function signUp(email, password) {
 }
 export async function signOut() {
   if (sb) await sb.auth.signOut();
-  user = null; ls.del('ft_last_user'); load(); emit();
+  user = null; ls.del('ft_last_user'); load(); emit(); emitWeights();
 }
 export const hasSupabase = () => Boolean(sb);
 
@@ -117,6 +128,22 @@ export function replaceAll(list) {
   flushSoon();
 }
 
+// ── CRUD: peso corporal ────────────────────────────────────────
+export async function saveWeight(item) {
+  const now = new Date().toISOString();
+  const rec = { ...item, id: item.id || uuid(), updated_at: now, created_at: item.created_at || now };
+  const i = weights.findIndex(x => x.id === rec.id);
+  if (i >= 0) weights[i] = rec; else weights.push(rec);
+  persistWeights();
+  queueW({ op: 'upsert', id: rec.id });
+  return rec;
+}
+export async function removeWeight(id) {
+  weights = weights.filter(x => x.id !== id);
+  persistWeights();
+  queueW({ op: 'delete', id });
+}
+
 // ── Sincronización ───────────────────────────────────────────
 function queue(entry, flush = true) {
   if (!user) return; // en modo local no hace falta cola
@@ -124,13 +151,23 @@ function queue(entry, flush = true) {
   ob.push(entry); ls.set(kOutbox(), ob);
   if (flush) flushSoon();
 }
+function queueW(entry, flush = true) {
+  if (!user) return;
+  const ob = ls.get(kWeightOutbox(), []).filter(e => e.id !== entry.id);
+  ob.push(entry); ls.set(kWeightOutbox(), ob);
+  if (flush) flushSoon();
+}
 let t = null;
 function flushSoon() { clearTimeout(t); t = setTimeout(() => sync(), 300); }
 
-export const pendingCount = () => (user ? ls.get(kOutbox(), []).length : 0);
+export const pendingCount = () => (user ? ls.get(kOutbox(), []).length + ls.get(kWeightOutbox(), []).length : 0);
 
 function toRow(it) {
   const r = {}; COLS.forEach(c => { if (it[c] !== undefined) r[c] = it[c]; });
+  r.user_id = user.id; return r;
+}
+function toRowW(it) {
+  const r = {}; WCOLS.forEach(c => { if (it[c] !== undefined) r[c] = it[c]; });
   r.user_id = user.id; return r;
 }
 
@@ -162,9 +199,33 @@ export async function sync() {
     items = all;
     ls.set('ft_last_sync', new Date().toISOString());
     persist();
+
+    // 3) Peso corporal: mismo procedimiento con su propia tabla
+    let wob = ls.get(kWeightOutbox(), []);
+    const wups = wob.filter(e => e.op === 'upsert').map(e => getWeight(e.id)).filter(Boolean).map(toRowW);
+    const wdels = wob.filter(e => e.op === 'delete').map(e => e.id);
+    for (let i = 0; i < wups.length; i += 200) {
+      const { error } = await sb.from(WTABLE).upsert(wups.slice(i, i + 200));
+      if (error) throw error;
+    }
+    if (wdels.length) {
+      const { error } = await sb.from(WTABLE).delete().in('id', wdels);
+      if (error) throw error;
+    }
+    ls.set(kWeightOutbox(), []);
+    const allW = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await sb.from(WTABLE).select(WCOLS.join(',')).order('date').range(from, from + 999);
+      if (error) throw error;
+      allW.push(...data);
+      if (data.length < 1000) break;
+    }
+    weights = allW;
+    persistWeights();
   } catch (e) {
     console.warn('Error de sincronización', e);
     emit();
+    emitWeights();
   } finally { syncing = false; }
 }
 export const lastSync = () => ls.get('ft_last_sync', null);
@@ -172,6 +233,8 @@ export const lastSync = () => ls.get('ft_last_sync', null);
 // Datos del modo local (para migrarlos a la cuenta)
 export const localItems = () => ls.get('ft_items_local', []);
 export function clearLocalItems() { ls.del('ft_items_local'); }
+export const localWeights = () => ls.get('ft_weights_local', []);
+export function clearLocalWeights() { ls.del('ft_weights_local'); }
 
 // Preferencias
 export const prefs = {

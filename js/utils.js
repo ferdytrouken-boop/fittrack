@@ -8,6 +8,12 @@ export const addDays = (iso, n) => { const d = fromISO(iso); d.setDate(d.getDate
 export const weekStart = iso => { const d = fromISO(iso); const w = (d.getDay() + 6) % 7; d.setDate(d.getDate() - w); return toISO(d); };
 export const weekDays = startIso => Array.from({ length: 7 }, (_, i) => addDays(startIso, i));
 export const diffDays = (a, b) => Math.round((fromISO(b) - fromISO(a)) / 86400000);
+// Último viernes en o antes de una fecha (hoy si no se indica) — nunca en el futuro,
+// para que siempre sea una fecha válida al registrar el peso de "esta semana".
+export const nearestFriday = (iso = today()) => {
+  const dow = (fromISO(iso).getDay() + 6) % 7; // 0=lun .. 6=dom
+  return addDays(iso, -((dow - 4 + 7) % 7));
+};
 
 export function isoWeek(iso) {
   const d = fromISO(iso); d.setHours(0, 0, 0, 0);
@@ -44,6 +50,8 @@ export const fmtMin = m => {
   return r ? `${h} h ${r} min` : `${h} h`;
 };
 export const fmtHours = m => (m / 60).toFixed(m >= 600 ? 0 : 1).replace('.', ',') + ' h';
+// Minutos → "H:MM" (p. ej. 95 → "1:35"), para ejes de gráficas.
+export const fmtHM = m => { m = Math.round(m || 0); const h = Math.floor(m / 60), r = m % 60; return `${h}:${pad(r)}`; };
 
 // hh:mm:ss ⇄ segundos
 export function parseHMS(str) {

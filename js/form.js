@@ -3,7 +3,7 @@ import * as db from './db.js';
 import { TYPES, TYPE_ORDER, MUSCLES, REGIONS, RUN_KINDS, CYCLE_KINDS, WALK_KINDS, FOOT_FORMATS, RESULTS, STATUS } from './catalog.js';
 import { icon } from './icons.js';
 import { openSheet, toast, ask } from './ui.js';
-import { today, fmtDateLong, parseHMS, fmtHMS, paceSec, fmtPace, fmtNum, num, esc } from './utils.js';
+import { today, fmtDateLong, fmtPace, paceSec, fmtNum, num, esc } from './utils.js';
 
 const QUICK_MIN = [30, 45, 60, 75, 90, 120];
 
@@ -40,6 +40,26 @@ const numInp = (name, val, attrs = '') => inp(name, val, `inputmode="decimal" au
 const sel = (name, opts, val, empty = '—') =>
   `<select name="${name}"><option value="">${empty}</option>${opts.map(o => `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
 
+// Campo de tiempo como tres cajas (h / min / seg) — un teclado numérico normal
+// no tiene ":", así que un solo campo de texto "h:mm:ss" no se puede rellenar bien en el móvil.
+const timeField = d => {
+  const h = d.time_sec != null ? Math.floor(d.time_sec / 3600) : '';
+  const m = d.time_sec != null ? Math.floor((d.time_sec % 3600) / 60) : '';
+  const s = d.time_sec != null ? d.time_sec % 60 : '';
+  return `<div class="time-trio">
+    <div class="time-unit"><input name="d.time_h" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${esc(h)}"><span>h</span></div>
+    <div class="time-unit"><input name="d.time_m" inputmode="numeric" pattern="[0-9]*" placeholder="00" maxlength="2" value="${esc(m)}"><span>min</span></div>
+    <div class="time-unit"><input name="d.time_s" inputmode="numeric" pattern="[0-9]*" placeholder="00" maxlength="2" value="${esc(s)}"><span>seg</span></div>
+  </div>`;
+};
+// Segundos totales a partir de las tres cajas, o null si están todas vacías.
+function readTime(form) {
+  if (!form['d.time_h']) return null;
+  const hv = form['d.time_h'].value, mv = form['d.time_m'].value, sv = form['d.time_s'].value;
+  if (!hv && !mv && !sv) return null;
+  return (num(hv) || 0) * 3600 + (num(mv) || 0) * 60 + (num(sv) || 0);
+}
+
 function gymFields(d) {
   const chosen = new Set(d.muscles || []);
   const exRows = (d.exercises || []).map(exRow).join('');
@@ -73,7 +93,7 @@ function runFields(d) {
   return `
     <div class="grid2">
       ${field('Distancia', numInp('d.km', d.km, 'placeholder="0,0"') + '<span class="unit">km</span>')}
-      ${field('Tiempo', inp('d.time', d.time_sec ? fmtHMS(d.time_sec) : '', 'inputmode="numeric" placeholder="h:mm:ss"'), '')}
+      ${field('Tiempo', timeField(d))}
     </div>
     <div class="live-stats" data-run-live></div>
     ${field('Tipo de entreno', sel('d.kind', RUN_KINDS, d.kind))}
@@ -103,7 +123,7 @@ function cycleFields(d) {
   return `
     <div class="grid2">
       ${field('Distancia', numInp('d.km', d.km, 'placeholder="0,0"') + '<span class="unit">km</span>')}
-      ${field('Tiempo', inp('d.time', d.time_sec ? fmtHMS(d.time_sec) : '', 'inputmode="numeric" placeholder="h:mm:ss"'))}
+      ${field('Tiempo', timeField(d))}
     </div>
     <div class="live-stats" data-run-live data-speed-only></div>
     ${field('Tipo de salida', sel('d.kind', CYCLE_KINDS, d.kind))}
@@ -121,7 +141,7 @@ function walkFields(d) {
   return `
     <div class="grid2">
       ${field('Distancia', numInp('d.km', d.km, 'placeholder="0,0 (opcional)"') + '<span class="unit">km</span>')}
-      ${field('Tiempo', inp('d.time', d.time_sec ? fmtHMS(d.time_sec) : '', 'inputmode="numeric" placeholder="h:mm:ss"'))}
+      ${field('Tiempo', timeField(d))}
     </div>
     <div class="live-stats" data-run-live></div>
     ${field('Tipo', sel('d.kind', WALK_KINDS, d.kind))}
@@ -250,7 +270,7 @@ function renderForm(sheet, item, isNew) {
   const spinLive = $('[data-spin-live]');
   const live = () => {
     if (runLive) {
-      const km = num(form['d.km'].value), sec = parseHMS(form['d.time'].value);
+      const km = num(form['d.km'].value), sec = readTime(form);
       const p = paceSec(sec, km);
       runLive.innerHTML = p
         ? (speedOnly
@@ -270,8 +290,8 @@ function renderForm(sheet, item, isNew) {
   form.addEventListener('input', e => {
     live();
     // En running, rellenar "tiempo dedicado" a partir del tiempo de carrera
-    if (e.target.name === 'd.time' && !form.duration_min.dataset.touched) {
-      const sec = parseHMS(e.target.value); if (sec) form.duration_min.value = Math.ceil(sec / 60);
+    if (['d.time_h', 'd.time_m', 'd.time_s'].includes(e.target.name) && !form.duration_min.dataset.touched) {
+      const sec = readTime(form); if (sec) form.duration_min.value = Math.ceil(sec / 60);
     }
     if (e.target.name === 'duration_min') form.duration_min.dataset.touched = '1';
   });
@@ -310,11 +330,16 @@ function collect(form, type) {
     data[k.slice(2)] = v;
   }
   // Números
-  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'ftp', 'avg_power', 'rpe', 'steps', 'resistance'].forEach(k => {
+  ['km', 'hr_avg', 'hr_max', 'elev', 'cadence', 'kcal', 'goals', 'assists', 'ftp', 'avg_power', 'rpe', 'steps', 'resistance', 'time_h', 'time_m', 'time_s'].forEach(k => {
     if (data[k] != null) { const n = num(data[k]); if (n == null || isNaN(n)) delete data[k]; else data[k] = n; }
   });
   if (form.querySelector('[name="d.rpe"]')?.hasAttribute('data-untouched') || fd.get('status') !== 'done') delete data.rpe;
-  if ((type === 'running' || type === 'cycling' || type === 'walking') && data.time) { data.time_sec = parseHMS(data.time); delete data.time; }
+  if (type === 'running' || type === 'cycling' || type === 'walking') {
+    if (data.time_h != null || data.time_m != null || data.time_s != null) {
+      data.time_sec = (data.time_h || 0) * 3600 + (data.time_m || 0) * 60 + (data.time_s || 0);
+    }
+    delete data.time_h; delete data.time_m; delete data.time_s;
+  }
   if (type === 'gym') {
     data.muscles = fd.getAll('muscles');
     const n = fd.getAll('ex.name'), s = fd.getAll('ex.sets'), r = fd.getAll('ex.reps'), w = fd.getAll('ex.kg');

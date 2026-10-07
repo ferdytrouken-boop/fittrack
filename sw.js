@@ -1,5 +1,5 @@
 // Service worker: la app funciona sin conexión.
-const VERSION = 'fittrack-v1.0.0';
+const VERSION = 'fittrack-v1.1.0';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/app.js', './js/db.js', './js/form.js', './js/ui.js', './js/charts.js',

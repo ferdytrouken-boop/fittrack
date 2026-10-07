@@ -18,6 +18,7 @@
   --c-walk: #FFC94A;
   --c-ellip: #FF6FA8;
   --c-spin: #7FE3D1;
+  --c-weight: #94A3B8;
   --c-foot: #22E3A0;
   --c-other: #B38CFF;
 
@@ -43,6 +44,9 @@ code { background: var(--card2); padding: 1px 5px; border-radius: 5px; font-size
 .t-walking { --tc: var(--c-walk); }
 .t-elliptical { --tc: var(--c-ellip); }
 .t-spinning { --tc: var(--c-spin); }
+.t-weight { --tc: var(--c-weight); }
+.wdelta.up { color: var(--danger); }
+.wdelta.down { color: var(--accent); }
 .t-football { --tc: var(--c-foot); }
 .t-other { --tc: var(--c-other); }
 
@@ -315,6 +319,9 @@ label.btn { cursor: pointer; }
 .seg input { display: none; }
 .seg span { display: block; text-align: center; padding: 9px 4px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .seg input:checked + span { background: var(--tc); color: var(--bg); }
+.seg-plain { margin: 14px 0; }
+.seg-2 { grid-template-columns: repeat(2, 1fr); }
+.seg-plain input:checked + span { background: var(--accent); color: var(--accent-ink); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .field { position: relative; display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
 .lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -326,6 +333,10 @@ label.btn { cursor: pointer; }
 .field textarea { resize: vertical; }
 .field input:focus, .field select:focus, .field textarea:focus, .ex-row input:focus { border-color: var(--tc, var(--accent)); }
 .field .unit { position: absolute; right: 12px; bottom: 13px; color: var(--muted); font-size: 13px; pointer-events: none; }
+.time-trio { display: flex; gap: 8px; }
+.time-unit { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.time-unit input { text-align: center; font-size: 18px; font-variant-numeric: tabular-nums; }
+.time-unit span { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 input[type=date] { color-scheme: dark; }
 .quick { display: flex; gap: 6px; margin: -4px 0 14px; flex-wrap: wrap; }
 .pill { padding: 6px 12px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--muted); }
